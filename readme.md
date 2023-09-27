@@ -85,7 +85,7 @@ localityName                    = Lenexa
 0.organizationName              = projectCraftsman 
 organizationalUnitName          = projectCraftsman Root CA
 commonName                      = projectCraftsman Root CA
-emailAddress                    = leland@sway.org
+emailAddress                    = leland@example.com
 
 [ v3_ca ]
 # Extensions for a typical CA (\`man x509v3_config\`).
@@ -209,7 +209,7 @@ localityName                    = Lenexa
 0.organizationName              = projectCraftsman 
 organizationalUnitName          = projectCraftsman Intermediate CA
 commonName                      = projectCraftsman Intermediate CA
-emailAddress                    = leland@sway.org
+emailAddress                    = leland@example.com
 
 [ usr_cert ]
 # Extensions for client certificates (\`man x509v3_config\`).
@@ -277,7 +277,7 @@ localityName                    = Lenexa
 0.organizationName              = projectCraftsman 
 organizationalUnitName          = projectCraftsman www.example.com Cert 
 commonName                      = www.example.com
-emailAddress                    = leland@sway.org
+emailAddress                    = leland@example.com
 
 [ alt_names ]
 DNS.0 = www.example.com
@@ -308,7 +308,7 @@ rm -rf /tmp/whoami/certs
 ```
 
 ```
-cat << EOF > ${CA}/intermediate/cnf/leland.at.sway.org.cnf
+cat << EOF > ${CA}/intermediate/cnf/leland.at.example.com.cnf
 .include ${CA}/intermediate/cnf/openssl.cnf
 
 [ req_distinguished_name ]
@@ -316,24 +316,24 @@ countryName                     = US
 stateOrProvinceName             = Kansas 
 localityName                    = Lenexa
 0.organizationName              = projectCraftsman 
-organizationalUnitName          = projectCraftsman leland@sway.org Cert 
-commonName                      = leland@sway.org 
-emailAddress                    = leland@sway.org
+organizationalUnitName          = projectCraftsman leland@example.com Cert 
+commonName                      = leland@example.com
+emailAddress                    = leland@example.com
 
 [ alt_names ]
-email = leland@sway.org
+email = leland@example.com
 EOF
 ```
 
 ```
 cd ${CA} 
-openssl genrsa -out intermediate/private/leland.at.sway.org.key.pem 2048
-chmod 400 intermediate/private/leland.at.sway.org.key.pem
-openssl req -config intermediate/cnf/leland.at.sway.org.cnf -key intermediate/private/leland.at.sway.org.key.pem -new -sha256 -out intermediate/csr/leland.at.sway.org.csr.pem
-openssl ca -config intermediate/cnf/leland.at.sway.org.cnf -extensions usr_cert -days 375 -notext -md sha256 -in intermediate/csr/leland.at.sway.org.csr.pem -out intermediate/certs/leland.at.sway.org.cert.pem
-chmod 444 intermediate/certs/leland.at.sway.org.cert.pem
-openssl x509 -noout -text -in intermediate/certs/leland.at.sway.org.cert.pem
-openssl verify -CAfile intermediate/certs/ca-chain.cert.pem intermediate/certs/leland.at.sway.org.cert.pem
+openssl genrsa -out intermediate/private/leland.at.example.com.key.pem 2048
+chmod 400 intermediate/private/leland.at.example.com.key.pem
+openssl req -config intermediate/cnf/leland.at.example.com.cnf -key intermediate/private/leland.at.example.com.key.pem -new -sha256 -out intermediate/csr/leland.at.example.com.csr.pem
+openssl ca -config intermediate/cnf/leland.at.example.com.cnf -extensions usr_cert -days 375 -notext -md sha256 -in intermediate/csr/leland.at.example.com.csr.pem -out intermediate/certs/leland.at.example.com.cert.pem
+chmod 444 intermediate/certs/leland.at.example.com.cert.pem
+openssl x509 -noout -text -in intermediate/certs/leland.at.example.com.cert.pem
+openssl verify -CAfile intermediate/certs/ca-chain.cert.pem intermediate/certs/leland.at.example.com.cert.pem
 ```
 
 ```
