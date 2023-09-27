@@ -296,6 +296,18 @@ openssl verify -CAfile intermediate/certs/ca-chain.cert.pem intermediate/certs/w
 ```
 
 ```
+mkdir -p /tmp/whoami/certs
+cp ${CA}/intermediate/private/www.example.com.key.pem /tmp/whoami/certs/.
+cp ${CA}/intermediate/certs/www.example.com.cert.pem /tmp/whoami/certs/.
+sudo docker run -d -p 127.0.0.2:443:80 -v /tmp/whoami/certs:/certs --name iamfoo traefik/whoami --cert /certs/www.example.com.cert.pem --key /certs/www.example.com.key.pem
+echo "127.0.0.2 www.example.com" | sudo tee -a /etc/hosts
+curl --cacert ./intermediate/certs/ca-chain.cert.pem -i  https://www.example.com:443
+sudo sed -i '/127.0.0.2 www.example.com/d' /etc/hosts
+sudo docker rm -f iamfoo
+rm -rf /tmp/whoami/certs
+```
+
+```
 cat << EOF > ${CA}/intermediate/cnf/leland.at.sway.org.cnf
 .include ${CA}/intermediate/cnf/openssl.cnf
 
@@ -322,4 +334,17 @@ openssl ca -config intermediate/cnf/leland.at.sway.org.cnf -extensions usr_cert 
 chmod 444 intermediate/certs/leland.at.sway.org.cert.pem
 openssl x509 -noout -text -in intermediate/certs/leland.at.sway.org.cert.pem
 openssl verify -CAfile intermediate/certs/ca-chain.cert.pem intermediate/certs/leland.at.sway.org.cert.pem
+```
+
+```
+mkdir -p /tmp/whoami/certs
+cp ${CA}/intermediate/private/www.example.com.key.pem /tmp/whoami/certs/.
+cp ${CA}/intermediate/certs/www.example.com.cert.pem /tmp/whoami/certs/.
+cp ${CA}/intermediate/certs/ca-chain.cert.pem /tmp/whoami/certs/.
+sudo docker run -d -p 127.0.0.2:443:80 -v /tmp/whoami/certs:/certs --name iamfoo traefik/whoami --cert /certs/www.example.com.cert.pem --key /certs/www.example.com.key.pem --cacert /certs/ca-chain.cert.pem
+echo "127.0.0.2 www.example.com" | sudo tee -a /etc/hosts
+curl --cert ./intermediate/certs/leland.at.example.com.cert.pem --key ./intermediate/private/leland.at.example.com.key.pem --cacert ./intermediate/certs/ca-chain.cert.pem -i  https://www.example.com:443
+sudo sed -i '/127.0.0.2 www.example.com/d' /etc/hosts
+sudo docker rm -f iamfoo
+rm -rf /tmp/whoami/certs
 ```
