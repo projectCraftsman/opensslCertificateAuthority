@@ -2,15 +2,23 @@
 
 First things first, this document is based on [work by Jamie Nguyen.](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html) I have added support for Subject Alternative Names on the Server and User certs and have made changes to the directory structure but the lineage should be obvious. 
 
+A few quick thoughts... 
+
+Why did I write this? I went on a side quest to understand Certificate Authorities and Public Key Infrastructure. For myself I wanted to be able to sign and trust certificates for services inside my network. For my clients that are not already managing their own CA and instead choosing to depend on self signed certs for individual applications I wanted to be able to offer something better and back it up with experience. 
+
+Will I be using this to run my own Certificate Authority? Yes. For now... I will eventually get restless and implement [smallstep](https://smallstep.com/docs/step-ca/) or [openxpki](https://github.com/openxpki) with [acme2certifier](https://github.com/grindsa/acme2certifier).
+
+Should you use this? You should read, follow, destroy what you created, rinse and and repeat until you understand how an why this works. You should understand the (undocumented) short cuts I took and decide for yourself. (Hint: I don't cover signing CSRs for certificate/key pairs I didn't create also CRL and OSCP)
+
 Ideally a Certificate Authority is initially created with a Root and Intermediate key and certificate pairs. The Root key is used to sign your Intermediate certificate and the Intermediate key is used to sign Server and User certificates. Depending on your security requirements both the Root and Intermediate key and certificate pairs should be created in on a secure, encrypted, offline (as in [sneakernet](https://en.wikipedia.org/wiki/Sneakernet)) system. The Intermediate key and certificate pair (along with the openssl file structure) can then be copied to a secure, encrypted, online system where it can be used to sign Sever and User Certificates. 
 
 In the event that Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate certificate (which should be derived fom a new Intermediate key if the original key was compromised). This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
 
+Now... let's get started.
+
 Create the Root CA directory structure, and configuration for use by `openssl`. The ${CA} environment variable can be modified to meet your needs and is used throughout as a base for absolute paths in config files and some commands. 
 
 Todo: standardize/document/assume all commands are run from ${CA}
-
-Todo: Why its good to understand this process.. but is ?likely? better to use tools like (insert tools here.)
 
 ```
 CA=${HOME}/projectCraftsman/CertificateAuthority 
