@@ -288,7 +288,7 @@ chmod 400 intermediate/private/intermediate.key.pem
 openssl req -config intermediate/cnf/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
 ```
 
-Sign the Intermediate certificate using he Root key, and set appropriate file permissions. You will be prompted for the Root key passphrase. Consider an appropriate `-days` value the longer the value (1 year in this example) the less often you will have to create a new Intermediate key/certificate pair. However, without a complete CRL/OSCP configuration the more likely a compromised Intermediate key will will be trusted long into the future. 
+Sign the Intermediate certificate using he Root key, and set appropriate file permissions. You will be prompted for the Root key passphrase. Consider an appropriate `-days` value, the longer the value (1 year in this example) the less often you will have to create a new Intermediate certificate. However, without a complete CRL/OSCP configuration the more likely a compromised Intermediate key will will be trusted long into the future. 
 
 ```
 openssl ca -config root/cnf/openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
