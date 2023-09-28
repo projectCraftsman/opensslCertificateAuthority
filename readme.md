@@ -1,13 +1,24 @@
 
 
+First things first, this document is based on [work by Jamie Nguyen.](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html) I have added support for Subject Alternative Names on the Server and User certs and have made changes to the directory structure but the lineage should be obvious. 
+
+Ideally a Certificate Authority is initially created with a Root and Intermediate key and certificate pairs. The Root key is used to sign your Intermediate certificate and the Intermediate key is used to sign Server and User certificates. Depending on your security requirements both the Root and Intermediate key and certificate pairs should be created in on a secure, encrypted, offline (as in [sneakernet](https://en.wikipedia.org/wiki/Sneakernet)) system. The Intermediate key and certificate pair (along with the openssl file structure) can then be copied to a secure, encrypted, online system where it can be used to sign Sever and User Certificates. 
+
+In the event that Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate certificate (which should be derived fom a new Intermediate key). This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
+
+Create the Root CA directory structure, and configuration for use by `openssl`. The ${CA} environment variable can be modified to meed your needs and is used throughout as a base for absolute paths in config files and some commands. 
+
+Todo: standardize/document/assume all commands are run from ${CA}
+
 ```
-CA="/home/leland/thing/sync/Projects/opensslCA/demo/CA"
-mkdir -p ${CA}/root/certs ${CA}/root/crl ${CA}/root/newcerts ${CA}/root/private ${CA}/root/cnf
-cd ${CA} 
+CA=${HOME}/projectCraftsman/CertificateAuthority 
+mkdir -p ${CA}/root/certs ${CA}/root/crl ${CA}/root/private ${CA}/root/cnf
 chmod 700 ${CA}/root/private
 touch ${CA}/root/index.txt
 echo 1000 > ${CA}/root/serial
 ```
+
+Create the Root CA openssl configuration file. Be sure to review and modify the Distinguished Name values to identify your organization.  
 
 ```
 cat << EOF > ${CA}/root/cnf/openssl.cnf
@@ -58,7 +69,7 @@ emailAddress            = optional
 
 [ req ]
 # Options for the \`req\` tool (\`man req\`).
-default_bits        = 2048
+default_bits        = 4096 
 distinguished_name  = req_distinguished_name
 string_mask         = utf8only
 prompt              = no
@@ -115,22 +126,33 @@ extendedKeyUsage = critical, OCSPSigning
 EOF
 ```
 
+Generate the Root key, generate the Root certificate, and set appropriate file permissions. You will be prompted for a passphrase when generating the Root key, this passphrase will be required to (self) sign the Root certificate and later to sign the Intermediate certificate. Choose and protect this passphrase wisely. Consider an appropriate `-days` value the longer the value (about 10 years in this example) the less likely you are to ever have to create a new Root key/certificate pair. However, without a complete CRL/OSCP configuration the more likely a compromised Root key will will be trusted long into the future. 
+
 ```
 cd ${CA}
 openssl genrsa -aes256 -out root/private/ca.key.pem 4096
 chmod 400 root/private/ca.key.pem
-openssl req -config root/cnf/openssl.cnf -key root/private/ca.key.pem -new -x509 -days 36525 -sha256 -extensions v3_ca -out root/certs/ca.cert.pem
+openssl req -config root/cnf/openssl.cnf -key root/private/ca.key.pem -new -x509 -days 3650 -sha256 -extensions v3_ca -out root/certs/ca.cert.pem
 chmod 444 root/certs/ca.cert.pem
+```
+
+Verify your newly created, self signed Root certificate. Confirm the Issuer, Validity, and Subject. 
+
+```
 openssl x509 -noout -text -in root/certs/ca.cert.pem
 ```
 
+Create the Intermediate CA directory structure, and configuration for use by `openssl`. 
+
 ```
-mkdir -p ${CA}/intermediate/certs ${CA}/intermediate/crl ${CA}/intermediate/csr ${CA}/intermediate/newcerts ${CA}/intermediate/private ${CA}/intermediate/cnf
+mkdir -p ${CA}/intermediate/certs ${CA}/intermediate/crl ${CA}/intermediate/csr  ${CA}/intermediate/private ${CA}/intermediate/cnf
 chmod 700 ${CA}/intermediate/private
 touch ${CA}/intermediate/index.txt
 echo 1000 > ${CA}/intermediate/serial
 echo 1000 > ${CA}/intermediate/crlnumber
 ```
+
+Create the Intermediate openssl configuration file. Be sure to review and modify the Distinguished Name values to identify your organization.  
 
 ```
 cat << EOF > ${CA}/intermediate/cnf/openssl.cnf
@@ -247,6 +269,8 @@ extendedKeyUsage = critical, OCSPSigning
 EOF
 ```
 
+Generate the Intermediate key, generate the Intermediate Certificate Signing Request, and set appropriate file permissions. You will be prompted for a passphrase when generating the Intermediate key, this passphrase will be required later to sign Server and User certificates. Choose and protect this passphrase wisely. 
+
 ```
 cd ${CA}
 openssl genrsa -aes256 -out intermediate/private/intermediate.key.pem 4096
@@ -254,17 +278,42 @@ chmod 400 intermediate/private/intermediate.key.pem
 openssl req -config intermediate/cnf/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
 ```
 
+Sign the Intermediate certificate using he Root key, and set appropriate file permissions. You will be prompted for the Root key passphrase. Consider an appropriate `-days` value the longer the value (1 year in this example) the less often you will have to create a new Intermediate key/certificate pair. However, without a complete CRL/OSCP configuration the more likely a compromised Intermediate key will will be trusted long into the future. 
+
 ```
 openssl ca -config root/cnf/openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
 chmod 444 intermediate/certs/intermediate.cert.pem
+```
+
+Verify your newly created, Root signed, Intermediate certificate. Confirm the Issuer, Validity, and Subject. 
+
+```
 openssl x509 -noout -text -in intermediate/certs/intermediate.cert.pem
+```
+
+Verify the validity of your Intermediate certificate against the Root certificate.
+
+```
 openssl verify -CAfile root/certs/ca.cert.pem intermediate/certs/intermediate.cert.pem
 ```
+
+Concatenate the Root and Intermediate certificates into a single certificate chain, and set appropriate file permissions. The certificate chain can be distributed publicly to enable server and clients to trust the Server and User certificates signed by your Intermediate key. 
 
 ```
 cat intermediate/certs/intermediate.cert.pem root/certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem
 chmod 444 intermediate/certs/ca-chain.cert.pem
 ```
+
+If you created your Root and Intermediate key and certificate pairs on an offline system, copy the `intermediate` directory structure from your offline system to a secure, encrypted, online system. Be sure to retain file permissions an attributes.
+
+Generate a Server key and set appropriate file permissions. Depending on your requirements consider including the `-aes256` option, to passphrase protect your Server key. 
+
+```
+openssl genrsa -out intermediate/private/www.example.com.key.pem 2048
+chmod 400 intermediate/private/www.example.com.key.pem
+```
+
+Create an openssl configuration for your Sever certificate. Be sure to review and modify the Distinguished Name and Subject Alternative Name (atl_names) values to identify your organization and server. Note this file includes the Intermediate configuration overriding specific values. 
 
 ```
 cat << EOF > ${CA}/intermediate/cnf/www.example.com.cnf
@@ -284,16 +333,32 @@ DNS.0 = www.example.com
 EOF
 ```
 
+Create a Certificate Signing Request for your Server certificate using your Server key and Server configuration file.
+
 ```
-cd ${CA} 
-openssl genrsa -out intermediate/private/www.example.com.key.pem 2048
-chmod 400 intermediate/private/www.example.com.key.pem
 openssl req -config intermediate/cnf/www.example.com.cnf -key intermediate/private/www.example.com.key.pem -new -sha256 -out intermediate/csr/www.example.com.csr.pem
-openssl ca -config intermediate/cnf/www.example.com.cnf -extensions server_cert -days 375 -notext -md sha256 -in intermediate/csr/www.example.com.csr.pem -out intermediate/certs/www.example.com.cert.pem
+```
+
+Sign your Sever certificate and set appropriate file permissions. You will be prompted for the Intermediate key passphrase. Consider an appropriate `-days` value the longer the value (1 year in this example) the less often you will have to renew your Server certificate. However, without a complete CRL/OSCP configuration the more likely a compromised Server key will will be trusted long into the future. 
+
+```
+openssl ca -config intermediate/cnf/www.example.com.cnf -extensions server_cert -days 365 -notext -md sha256 -in intermediate/csr/www.example.com.csr.pem -out intermediate/certs/www.example.com.cert.pem
 chmod 444 intermediate/certs/www.example.com.cert.pem
+```
+
+Verify your newly created, Root signed, Intermediate certificate. Confirm the Issuer, Validity, Subject and Subject Alternative Name.
+
+```
 openssl x509 -noout -text -in intermediate/certs/www.example.com.cert.pem
+```
+
+Verify the validity of your Server certificate against the Intermediate certificate.
+
+```
 openssl verify -CAfile intermediate/certs/ca-chain.cert.pem intermediate/certs/www.example.com.cert.pem
 ```
+
+Optional: use `docker`, `traefik/whoami` and `curl` to prove your Server certificate works. 
 
 ```
 mkdir -p /tmp/whoami/certs
@@ -306,6 +371,15 @@ sudo sed -i '/127.0.0.2 www.example.com/d' /etc/hosts
 sudo docker rm -f iamfoo
 rm -rf /tmp/whoami/certs
 ```
+
+Generate a Server key and set appropriate file permissions. Depending on your requirements consider including the `-aes256` option, to passphrase protect your User key.
+
+```
+openssl genrsa -out intermediate/private/leland.at.example.com.key.pem 2048
+chmod 400 intermediate/private/leland.at.example.com.key.pem
+```
+
+Create an openssl configuration for your User certificate. Be sure to review and modify the Distinguished Name and Subject Alternative Name (atl_names) values to identify your organization and User. Note this file includes the Intermediate configuration overriding specific values. 
 
 ```
 cat << EOF > ${CA}/intermediate/cnf/leland.at.example.com.cnf
@@ -325,16 +399,32 @@ email = leland@example.com
 EOF
 ```
 
+Create a Certificate Signing Request for your User certificate using your User key and User configuration file.
+
 ```
-cd ${CA} 
-openssl genrsa -out intermediate/private/leland.at.example.com.key.pem 2048
-chmod 400 intermediate/private/leland.at.example.com.key.pem
 openssl req -config intermediate/cnf/leland.at.example.com.cnf -key intermediate/private/leland.at.example.com.key.pem -new -sha256 -out intermediate/csr/leland.at.example.com.csr.pem
-openssl ca -config intermediate/cnf/leland.at.example.com.cnf -extensions usr_cert -days 375 -notext -md sha256 -in intermediate/csr/leland.at.example.com.csr.pem -out intermediate/certs/leland.at.example.com.cert.pem
+```
+
+Sign your Sever certificate and set appropriate file permissions. You will be prompted for the Intermediate key passphrase. Consider an appropriate `-days` value the longer the value (1 year in this example) the less often you will have to renew your User certificate. However, without a complete CRL/OSCP configuration the more likely a compromised User key will will be trusted long into the future. 
+
+```
+openssl ca -config intermediate/cnf/leland.at.example.com.cnf -extensions usr_cert -days 365 -notext -md sha256 -in intermediate/csr/leland.at.example.com.csr.pem -out intermediate/certs/leland.at.example.com.cert.pem
 chmod 444 intermediate/certs/leland.at.example.com.cert.pem
+```
+
+Verify your newly created, Root signed, Intermediate certificate. Confirm the Issuer, Validity, Subject and Subject Alternative Name.
+
+```
 openssl x509 -noout -text -in intermediate/certs/leland.at.example.com.cert.pem
+```
+
+Verify the validity of your Server certificate against the Intermediate certificate.
+
+```
 openssl verify -CAfile intermediate/certs/ca-chain.cert.pem intermediate/certs/leland.at.example.com.cert.pem
 ```
+
+Optional: use `docker`, `traefik/whoami` and `curl` to prove your User certificate works. 
 
 ```
 mkdir -p /tmp/whoami/certs
