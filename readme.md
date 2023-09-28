@@ -279,7 +279,7 @@ extendedKeyUsage = critical, OCSPSigning
 EOF
 ```
 
-Generate the Intermediate key, generate the Intermediate Certificate Signing Request, and set appropriate file permissions. You will be prompted for a passphrase when generating the Intermediate key, this passphrase will be required later to sign Server and User certificates. Choose and protect this passphrase wisely. 
+Generate the Intermediate key, generate the Intermediate Certificate Signing Request, and set appropriate file permissions. You will be prompted for a passphrase when generating the Intermediate key, this passphrase will be required later to sign Server and User certificates. Choose and protect this passphrase wisely. You will be prompted for the Intermediate key passphrase to (self) sign the Certificate Signing Request.
 
 ```
 cd ${CA}
@@ -291,7 +291,7 @@ openssl req -config intermediate/cnf/openssl.cnf -new -sha256 -key intermediate/
 Sign the Intermediate certificate using he Root key, and set appropriate file permissions. You will be prompted for the Root key passphrase. Consider an appropriate `-days` value, the longer the value (1 year in this example) the less often you will have to create a new Intermediate certificate. However, without a complete CRL/OSCP configuration the more likely a compromised Intermediate key will will be trusted long into the future. 
 
 ```
-openssl ca -config root/cnf/openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
+openssl ca -config root/cnf/openssl.cnf -extensions v3_intermediate_ca -days 365 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
 chmod 444 intermediate/certs/intermediate.cert.pem
 ```
 
@@ -316,7 +316,7 @@ chmod 444 intermediate/certs/ca-chain.cert.pem
 
 If you created your Root and Intermediate key and certificate pairs on an offline system, copy the `intermediate` directory structure from your offline system to a secure, encrypted, online system. Be sure to retain file permissions and attributes.
 
-Generate a Server key and set appropriate file permissions. Depending on your requirements consider including the `-aes256` option, to passphrase protect your Server key. 
+Generate a User key and set appropriate file permissions. Depending on your requirements consider including the `-aes256` option, to passphrase protect your Server key. 
 
 ```
 openssl genrsa -out intermediate/private/www.example.com.key.pem 2048
