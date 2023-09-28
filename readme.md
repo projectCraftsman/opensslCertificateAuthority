@@ -10,6 +10,8 @@ Create the Root CA directory structure, and configuration for use by `openssl`. 
 
 Todo: standardize/document/assume all commands are run from ${CA}
 
+Todo: Why its good to understand this process.. but is ?likely? better to use tools like (insert tools here.)
+
 ```
 CA=${HOME}/projectCraftsman/CertificateAuthority 
 mkdir -p ${CA}/root/certs ${CA}/root/crl ${CA}/root/private ${CA}/root/cnf
