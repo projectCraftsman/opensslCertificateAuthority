@@ -314,7 +314,7 @@ cat intermediate/certs/intermediate.cert.pem root/certs/ca.cert.pem > intermedia
 chmod 444 intermediate/certs/ca-chain.cert.pem
 ```
 
-If you created your Root and Intermediate key and certificate pairs on an offline system, copy the `intermediate` directory structure from your offline system to a secure, encrypted, online system. Be sure to retain file permissions an attributes.
+If you created your Root and Intermediate key and certificate pairs on an offline system, copy the `intermediate` directory structure from your offline system to a secure, encrypted, online system. Be sure to retain file permissions and attributes.
 
 Generate a Server key and set appropriate file permissions. Depending on your requirements consider including the `-aes256` option, to passphrase protect your Server key. 
 
