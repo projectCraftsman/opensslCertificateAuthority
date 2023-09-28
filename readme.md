@@ -4,7 +4,7 @@ First things first, this document is based on [work by Jamie Nguyen.](https://ja
 
 Ideally a Certificate Authority is initially created with a Root and Intermediate key and certificate pairs. The Root key is used to sign your Intermediate certificate and the Intermediate key is used to sign Server and User certificates. Depending on your security requirements both the Root and Intermediate key and certificate pairs should be created in on a secure, encrypted, offline (as in [sneakernet](https://en.wikipedia.org/wiki/Sneakernet)) system. The Intermediate key and certificate pair (along with the openssl file structure) can then be copied to a secure, encrypted, online system where it can be used to sign Sever and User Certificates. 
 
-In the event that Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate certificate (which should be derived fom a new Intermediate key). This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
+In the event that Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate certificate (which should be derived fom a new Intermediate key if the original key was compromised). This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
 
 Create the Root CA directory structure, and configuration for use by `openssl`. The ${CA} environment variable can be modified to meed your needs and is used throughout as a base for absolute paths in config files and some commands. 
 
