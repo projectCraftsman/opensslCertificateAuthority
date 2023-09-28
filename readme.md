@@ -6,7 +6,7 @@ Ideally a Certificate Authority is initially created with a Root and Intermediat
 
 In the event that Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate certificate (which should be derived fom a new Intermediate key if the original key was compromised). This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
 
-Create the Root CA directory structure, and configuration for use by `openssl`. The ${CA} environment variable can be modified to meed your needs and is used throughout as a base for absolute paths in config files and some commands. 
+Create the Root CA directory structure, and configuration for use by `openssl`. The ${CA} environment variable can be modified to meet your needs and is used throughout as a base for absolute paths in config files and some commands. 
 
 Todo: standardize/document/assume all commands are run from ${CA}
 
