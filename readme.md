@@ -8,11 +8,11 @@ Why did I write this? I went on a side quest to understand Certificate Authoriti
 
 Will I be using this to run my own Certificate Authority? Yes. For now... I will eventually get restless and implement [smallstep](https://smallstep.com/docs/step-ca/) or [openxpki](https://github.com/openxpki) with [acme2certifier](https://github.com/grindsa/acme2certifier).
 
-Should you use this? You should read, follow, destroy what you created, rinse and and repeat until you understand how an why this works. You should understand the (undocumented) short cuts I took and decide for yourself. (Hint: I don't cover signing CSRs for certificate/key pairs I didn't create also CRL and OSCP)
+Should you use this? You should read, follow, destroy what you created, rinse and and repeat until you understand how and why this works. You should understand the (undocumented) short cuts I took and decide for yourself. (Hint: I don't cover signing CSRs for certificate/key pairs I didn't create also CRL and OSCP)
 
 Ideally a Certificate Authority is initially created with a Root and Intermediate key and certificate pairs. The Root key is used to sign your Intermediate certificate and the Intermediate key is used to sign Server and User certificates. Depending on your security requirements both the Root and Intermediate key and certificate pairs should be created in on a secure, encrypted, offline (as in [sneakernet](https://en.wikipedia.org/wiki/Sneakernet)) system. The Intermediate key and certificate pair (along with the openssl file structure) can then be copied to a secure, encrypted, online system where it can be used to sign Sever and User Certificates. 
 
-In the event that Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate certificate (which should be derived fom a new Intermediate key if the original key was compromised). This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
+In the event that the Intermediate key is compromised or the certificate expires, the Root key can be used to sign a new Intermediate key/certificate pair. This document has some plumbing for Certificate Revocation List (CRL) and Online Certificate Status Protocol (OCSP) but at this time I am not going to cover its practical use. 
 
 Now... let's get started.
 
@@ -288,7 +288,7 @@ chmod 400 intermediate/private/intermediate.key.pem
 openssl req -config intermediate/cnf/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
 ```
 
-Sign the Intermediate certificate using he Root key, and set appropriate file permissions. You will be prompted for the Root key passphrase. Consider an appropriate `-days` value, the longer the value (1 year in this example) the less often you will have to create a new Intermediate certificate. However, without a complete CRL/OSCP configuration the more likely a compromised Intermediate key will will be trusted long into the future. 
+Sign the Intermediate certificate using he Root key, and set appropriate file permissions. You will be prompted for the Root key passphrase. Consider an appropriate `-days` value, the longer the value (1 year in this example) the less often you will have to create a new Intermediate key/certificate pair. However, without a complete CRL/OSCP configuration the more likely a compromised Intermediate key will will be trusted long into the future. 
 
 ```
 openssl ca -config root/cnf/openssl.cnf -extensions v3_intermediate_ca -days 365 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
