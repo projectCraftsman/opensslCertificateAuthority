@@ -1,6 +1,6 @@
 
 
-First things first, this document is based on [work by Jamie Nguyen.](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html) I have added support for Subject Alternative Names on the Server and User certs and have made changes to the directory structure but the lineage should be obvious. 
+First things first, this document is based on [work by Jamie Nguyen.](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html). You should go read his document it points out a few details that I gloss over here. I have added support for Subject Alternative Names on the Server and User certs and have made changes to the directory structure but the lineage should be obvious. 
 
 A few quick thoughts... 
 
